@@ -8,8 +8,6 @@ namespace WebApiAnalysis.Models
 {
 	public class PersonTestResult
 	{
-		[BsonId]
-		public ObjectId InternalId { get; set; }
 		public Person Person { get; set; }
 		public List<Answer> Answers { get; set; }
 		public int Result { get; set; }

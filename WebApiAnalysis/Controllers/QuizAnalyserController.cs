@@ -12,7 +12,7 @@ namespace WebApiAnalysis.Controllers
     [ApiController]
     public class QuizAnalysisController : ControllerBase
     {
-        private readonly QuizResultService quizResultService;
+        // private readonly QuizResultService quizResultService;
 
         // public QuizResultsController(QuizResultService quizResultService)
         // {

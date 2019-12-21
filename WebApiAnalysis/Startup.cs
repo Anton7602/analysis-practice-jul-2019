@@ -9,6 +9,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
+using WebApiAnalysis.Interfaces;
 using WebApiAnalysis.Models;
 using WebApiAnalysis.Services;
 
@@ -29,9 +30,10 @@ namespace WebApiAnalysis
             {
                 options.ConnectionString = Configuration.GetSection("MongoConnection:ConnectionString").Value;
                 options.Database = Configuration.GetSection("MongoConnection:Database").Value;
+                options.PersonTestResultCollectionName = Configuration.GetSection("MongoConnection:PersonTestResultCollectionName").Value;
             });
 
-            services.AddSingleton<QuizResultService>();
+            services.AddSingleton<IDataStorage, DataStorage>();
             services.AddSingleton<Settings>();
 
             services.AddControllers().AddNewtonsoftJson();

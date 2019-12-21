@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using WebApiAnalysis.Interfaces;
 using WebApiAnalysis.Models;
-using WebApiAnalysis.Services;
 
 namespace WebApiAnalysis.Controllers
 {
@@ -12,29 +12,52 @@ namespace WebApiAnalysis.Controllers
     [ApiController]
     public class QuizResultsController : ControllerBase
     {
-        private readonly QuizResultService quizResultService;
+        private readonly IDataStorage dataStorage;
 
-        public QuizResultsController(QuizResultService quizResultService)
+        public QuizResultsController(IDataStorage dataStorage)
         {
-            this.quizResultService = quizResultService;
+            this.dataStorage = dataStorage;
         }
 
         [HttpPost]
-        public void Post([FromBody] QuizResultApiIn quizResultApiIn)
+        public object Post([FromBody] QuizResultApiIn quizResultApiIn)
         {
-            Person person = new Person { Email = quizResultApiIn.Email, Name = quizResultApiIn.Name };
-            
-            //TODO: add List<Answer> to PersonTestResult
+            try
+            {
+                List<string> errors = new List<string>();
 
-            PersonTestResult personTestResult = 
-                new PersonTestResult 
-                { 
-                    Person = person, 
-                    Notes = quizResultApiIn.Comment, 
-                    Result = quizResultApiIn.PercentUserAnswersCorrect
-                };
-            
-            quizResultService.Create(personTestResult);
+                if (quizResultApiIn.Name == null)
+                {
+                    errors.Add("Parameter \"name\" is empty");
+                }
+                if (quizResultApiIn.Email == null)
+                {
+                    errors.Add("Parameter \"email\" is empty");
+                }
+                if (quizResultApiIn.QuestionResults == null)
+                {
+                    errors.Add("Parameter \"quizresults\" is empty");
+                }
+                if (errors.Count != 0)
+                {
+                    return new Status { Result = "Fail", Errors = errors };
+                }
+
+                dataStorage.SavePersonTestResult(Parser.ParseQuizResultApiIn(quizResultApiIn));
+
+                return new Status { Result = "Success" };
+            }
+            catch (Exception e)
+            {
+                return new Status { Result = "Error", Errors = new List<string> { e.Message } };
+            }
+        }       
+
+
+        [HttpGet]
+        [Route("test")]
+        public string t(){
+            return "asd";
         }
     }
 }

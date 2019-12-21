@@ -1,10 +1,11 @@
 // using System;
 // using System.Collections.Generic;
+// using WebApiAnalysis.Logic;
 // using WebApiAnalysis.Models;
 // // using QuizData.Analyser.Models;
 // // using QuizData.Parser.Models;
 
-// namespace QuizData.Analyser
+// namespace WebApiAnalysis.Logic
 // {
 //     public static class DataAnalyser
 // 	{
@@ -21,7 +22,7 @@
 //                 }
 
 //                 pStatistics.AdditionalInfo =
-//                     LinearApproximation.LinearApproximation.GetLinearApproximation(x,
+//                     LinearApproximation.GetLinearApproximation(x,
 //                     pStatistics.Results.ConvertAll(Convert.ToDouble));
 //             }
 //             else
