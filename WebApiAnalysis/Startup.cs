@@ -48,10 +48,7 @@ namespace WebApiAnalysis
 
             app.UseEndpoints(endpoints =>
             {
-                app.UseEndpoints(endpoints =>
-                {
-                    endpoints.MapControllers(); 
-                });
+                endpoints.MapControllers(); 
             });
         }
     }
