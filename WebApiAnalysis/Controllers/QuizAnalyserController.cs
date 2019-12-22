@@ -22,11 +22,10 @@ namespace WebApiAnalysis.Controllers
         }
 
         [HttpGet("analyserAlldata")]
-        public IActionResult d()
+        public IActionResult AnalyserAlldata()
         {
             DataAnalyser.Analyze(dataStorage.GetPersonTestResults());
-            return Ok();
-            //return Ok(dataStorage.GetPersonTestResults());
+            return Ok(dataStorage.GetPersonTestResults());
         }
 
         

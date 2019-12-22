@@ -51,6 +51,15 @@ namespace WebApiAnalysis.Controllers
             {
                 return BadRequest(new Status { Result = "Error", Errors = new List<string> { e.Message } });
             }
-        }       
+        }
+
+        [HttpGet]
+        public ActionResult<List<PersonTestResult>> Get() =>
+            dataStorage.GetPersonTestResults();
+
+        [HttpGet("test")]
+        public string TestMethod(){
+            return "asd";
+        }
     }
 }
