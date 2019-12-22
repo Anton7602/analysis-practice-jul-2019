@@ -1,152 +1,220 @@
-// using System;
-// using System.Collections.Generic;
-// using WebApiAnalysis.Logic;
-// using WebApiAnalysis.Models;
-// // using QuizData.Analyser.Models;
-// // using QuizData.Parser.Models;
+using System;
+using System.Collections.Generic;
+using WebApiAnalysis.Models;
 
-// namespace WebApiAnalysis.Logic
-// {
-//     public static class DataAnalyser
-// 	{
-//         private static uint _minNumberForAdvStat;
+namespace WebApiAnalysis.Logic
+{
+    public static class DataAnalyser
+    {
+        private static uint _minNumberForAdvStat;
 
-//         public static void CalculateAdditionalInfo(PersonStatistics pStatistics)
-//         {
-//             if (pStatistics.AmountOfAttempts > _minNumberForAdvStat - 1)
-//             {
-//                 var x = new double[pStatistics.AmountOfAttempts];
-//                 for (var i = 0; i < x.Length; i++)
-//                 {
-//                     x[i] = i + 1;
-//                 }
+        public static void CalculateAdditionalInfo(PersonStatistics pStatistics)
+        {
+            if (pStatistics.AmountOfAttempts > _minNumberForAdvStat - 1)
+            {
+                var x = new double[pStatistics.AmountOfAttempts];
+                for (var i = 0; i < x.Length; i++)
+                {
+                    x[i] = i + 1;
+                }
 
-//                 pStatistics.AdditionalInfo =
-//                     LinearApproximation.GetLinearApproximation(x,
-//                     pStatistics.Results.ConvertAll(Convert.ToDouble));
-//             }
-//             else
-//             {
-//                 pStatistics.AdditionalInfo = null;
-//             }
-//         }
+                pStatistics.AdditionalInfo =
+                    LinearApproximation.GetLinearApproximation(x,
+                    pStatistics.Results.ConvertAll(Convert.ToDouble));
+            }
+            else
+            {
+                pStatistics.AdditionalInfo = null;
+            }
+        }
 
-//         /// <summary>
-//         /// Performs data analysis
-//         /// </summary>
-//         /// <param name="data">Data for analysis</param>
-//         /// <param name="minNumberForAdvStat">Minimum number of tests for one person to build advanced statistics</param>
-//         /// <returns>Report</returns>
-// 		public static DataAnalyserReport Analyze(IEnumerable<PersonTestResult> data, uint minNumberForAdvStat = 4)
-// 		{
-//             _minNumberForAdvStat = minNumberForAdvStat;
+        /// <summary>
+        /// Performs data analysis
+        /// </summary>
+        /// <param name="data">Data for analysis</param>
+        /// <param name="minNumberForAdvStat">Minimum number of tests for one person to build advanced statistics</param>
+        /// <returns>Report</returns>
+        public static DataAnalyserReport Analyze(IEnumerable<PersonTestResult> data, uint minNumberForAdvStat = 4)
+        {
+            _minNumberForAdvStat = minNumberForAdvStat;
 
-// 			var report = new DataAnalyserReport();
+            var report = new DataAnalyserReport();
 
-// 			// Collection of pair <Email, Amount of attempts>
-// 			var personStatistics = new Dictionary<string, PersonStatistics>();
+            // Collection of pair <Email, Amount of attempts>
+            var personStatistics = new Dictionary<string, PersonStatistics>();
 
-// 			// Collection of pair <Result, Amount>
-// 			var resultDistribution = new Dictionary<uint, uint>();
+            // Collection of pair <Result, Amount>
+            var resultDistribution = new Dictionary<int, int>();
 
-// 			// Statistics on questions
-// 			var qStatistics = new Dictionary<string, QuestionStatistics>();
+            // Statistics on questions
+            var qStatistics = new Dictionary<string, QuestionStatistics>();
 
-// 			var totalAmount = 0U;
-// 			var maxNumberOfAttempts = 0U;
-// 			var personWithMaxNumberOfAttempts = "";
+            var totalAmount = 0U;
+            var maxNumberOfAttempts = 0U;
+            var personWithMaxNumberOfAttempts = "";
 
-// 			foreach (var testResult in data)
-// 			{
-// 				if (!personStatistics.ContainsKey(testResult.Person.Email))
-// 					personStatistics.Add(testResult.Person.Email, new PersonStatistics());
-// 				personStatistics[testResult.Person.Email].Results.Add(testResult.Result);
+            foreach (var testResult in data)
+            {
+                if (testResult.Answers == null)
+                {
+                    continue;
+                }
 
-// 				if (personStatistics[testResult.Person.Email].AmountOfAttempts > maxNumberOfAttempts)
-// 				{
-// 					maxNumberOfAttempts = personStatistics[testResult.Person.Email].AmountOfAttempts;
-// 					personWithMaxNumberOfAttempts = testResult.Person.Email;
-// 				}
+                personStatistics = GetPersonalStatistics(personStatistics, testResult);
 
-// 				if (!resultDistribution.ContainsKey(testResult.Result))
-// 					resultDistribution.Add(testResult.Result, 0);
-// 				resultDistribution[testResult.Result]++;
+                if (personStatistics[testResult.Person.Email].AmountOfAttempts > maxNumberOfAttempts)
+                {
+                    maxNumberOfAttempts = personStatistics[testResult.Person.Email].AmountOfAttempts;
+                    personWithMaxNumberOfAttempts = testResult.Person.Email;
+                }
 
-// 				totalAmount++;
+                resultDistribution = GetResultDistribution(resultDistribution, testResult.Result);
+                totalAmount++;
 
-// 				// Collect statistics on questions
-// 				foreach (var answer in testResult.Answers)
-// 				{
-// 					if (!qStatistics.ContainsKey(answer.Question.QuestionText))
-// 						qStatistics.Add(answer.Question.QuestionText, new QuestionStatistics());
+                // Collect statistics on questions
+                qStatistics = StatisticsOnQuestions(qStatistics, testResult.Answers);
+            }
 
-// 					if (answer.AnswerIndex == answer.Question.CorrectAnswerIndex)
-// 						qStatistics[answer.Question.QuestionText].RightAnswersAmount++;
-// 					else
-// 						qStatistics[answer.Question.QuestionText].WrongAnswersAmount++;
+            foreach (var pStatistics in personStatistics)
+            {
+                CalculateAdditionalInfo(pStatistics.Value);
+            }
 
-// 					qStatistics[answer.Question.QuestionText].AnswersDistribution[answer.AnswerIndex]++;
-// 					qStatistics[answer.Question.QuestionText].RightAnswerIndex = answer.Question.CorrectAnswerIndex;
-// 				}
-// 			}
+            report.TotalAmountOfTests = totalAmount;
+            report.PersonStatistics = personStatistics;
+            report.ResultDistribution = resultDistribution;
+            report.QuestionStatistics = qStatistics;
 
-//             foreach (var pStatistics in personStatistics)
-//             {
-//                 CalculateAdditionalInfo(pStatistics.Value);
-//             }
+            return report;
+        }
 
-// 			report.TotalAmountOfTests = totalAmount;
-// 			report.PersonStatistics = personStatistics;
-// 			report.ResultDistribution = resultDistribution;
-// 			report.QuestionStatistics = qStatistics;
+        public static DataAnalyserReport Analyse(DataAnalyserReport report, PersonTestResult data, uint minNumberForAdvStat = 4)
+        {
+            if (data.Answers == null)
+            {
+                return report;
+            }
+            var personWithMaxNumberOfAttempts = "";
+            var maxNumberOfAttempts = 0U;
 
-// 			return report;
-// 		}
+            report.PersonStatistics = GetPersonalStatistics(report.PersonStatistics, data);
 
-// 		/// <summary>
-// 		/// Analyzes new information and adds data to an existing report
-// 		/// </summary>
-// 		/// <param name="report">An existing report</param>
-// 		/// <param name="newData">Collection of new tests</param>
-// 		public static void AddNewData(this DataAnalyserReport report, IEnumerable<PersonTestResult> newData)
-// 		{
-// 			foreach (var el in newData)
-// 				AddNewData(report, el);
-// 		}
+            if (report.PersonStatistics[data.Person.Email].AmountOfAttempts > maxNumberOfAttempts)
+            {
+                maxNumberOfAttempts = report.PersonStatistics[data.Person.Email].AmountOfAttempts;
+                personWithMaxNumberOfAttempts = data.Person.Email;
+            }
 
-// 		/// <summary>
-// 		/// Analyzes new information and adds data to an existing report
-// 		/// </summary>
-// 		/// <param name="report">An existing report</param>
-// 		/// <param name="newData">Information about new test</param>
-// 		public static void AddNewData(this DataAnalyserReport report, PersonTestResult newData)
-// 		{
-// 			if (!report.PersonStatistics.ContainsKey(newData.Person.Email))
-// 				report.PersonStatistics.Add(newData.Person.Email, new PersonStatistics());
-// 			report.PersonStatistics[newData.Person.Email].Results.Add(newData.Result);
-//             CalculateAdditionalInfo(report.PersonStatistics[newData.Person.Email]);
+            report.ResultDistribution = GetResultDistribution(report.ResultDistribution, data.Result);
+            report.TotalAmountOfTests++;
 
-// 			if (!report.ResultDistribution.ContainsKey(newData.Result))
-// 				report.ResultDistribution.Add(newData.Result, 0U);
-// 			report.ResultDistribution[newData.Result]++;
+            // Collect statistics on questions
+            report.QuestionStatistics = StatisticsOnQuestions(report.QuestionStatistics, data.Answers);
+            foreach (var pStatistics in report.PersonStatistics)
+            {
+                CalculateAdditionalInfo(pStatistics.Value);
+            }
 
-// 			report.TotalAmountOfTests++;
+            return report;
+        }
 
-// 			foreach (var answer in newData.Answers)
-// 			{
-// 				if (!report.QuestionStatistics.ContainsKey(answer.Question.QuestionText))
-// 					report.QuestionStatistics.Add(answer.Question.QuestionText, new QuestionStatistics());
-// 				var el = report.QuestionStatistics[answer.Question.QuestionText];
+        public static Dictionary<string, QuestionStatistics> StatisticsOnQuestions(Dictionary<string, QuestionStatistics> qustion_statistics, List<Answer> answers)
+        {
+            foreach (var answer in answers)
+            {
+                if (!qustion_statistics.ContainsKey(answer.Question.QuestionText))
+                {
+                    qustion_statistics.Add(answer.Question.QuestionText, new QuestionStatistics());
+                }
 
-// 				if (answer.AnswerIndex == answer.Question.CorrectAnswerIndex)
-// 					el.RightAnswersAmount++;
-// 				else
-// 					el.WrongAnswersAmount++;
+                if (answer.AnswerIndex == answer.Question.CorrectAnswerIndex)
+                {
+                    qustion_statistics[answer.Question.QuestionText].RightAnswersAmount++;
+                }
+                else
+                {
+                    qustion_statistics[answer.Question.QuestionText].WrongAnswersAmount++;
+                }
 
-// 				el.RightAnswerIndex = answer.Question.CorrectAnswerIndex;
+                qustion_statistics[answer.Question.QuestionText].AnswersDistribution[answer.AnswerIndex]++;
+                qustion_statistics[answer.Question.QuestionText].RightAnswerIndex = answer.Question.CorrectAnswerIndex;
+            }
+            return qustion_statistics;
+        }
 
-// 				el.AnswersDistribution[answer.AnswerIndex]++;
-// 			}
-// 		}
-// 	}
-// }
+
+        public static Dictionary<string, PersonStatistics> GetPersonalStatistics(Dictionary<string, PersonStatistics> personStatistics, PersonTestResult data)
+        {
+            if (!personStatistics.ContainsKey(data.Person.Email))
+            {
+                personStatistics.Add(data.Person.Email, new PersonStatistics());
+            }
+            personStatistics[data.Person.Email].Results.Add(data.Result);
+
+            //if (personStatistics[data.Person.Email].AmountOfAttempts > maxNumberOfAttempts)
+            //{
+            //    maxNumberOfAttempts = personStatistics[data.Person.Email].AmountOfAttempts;
+            //    personWithMaxNumberOfAttempts = data.Person.Email;
+            //}
+
+            return personStatistics;
+        }
+
+        public static Dictionary<int, int> GetResultDistribution(Dictionary<int, int> resultDistribution, int data)
+        {
+            if (!resultDistribution.ContainsKey(data))
+            {
+                resultDistribution.Add(data, 0);
+            }
+            resultDistribution[data]++;
+            return resultDistribution;
+        }
+
+
+        /// <summary>
+        /// Analyzes new information and adds data to an existing report
+        /// </summary>
+        /// <param name="report">An existing report</param>
+        /// <param name="newData">Collection of new tests</param>
+        public static void AddNewData(this DataAnalyserReport report, IEnumerable<PersonTestResult> newData)
+        {
+            foreach (var el in newData)
+                AddNewData(report, el);
+        }
+
+        /// <summary>
+        /// Analyzes new information and adds data to an existing report
+        /// </summary>
+        /// <param name="report">An existing report</param>
+        /// <param name="newData">Information about new test</param>
+        public static void AddNewData(this DataAnalyserReport report, PersonTestResult newData)
+        {
+            if (!report.PersonStatistics.ContainsKey(newData.Person.Email))
+                report.PersonStatistics.Add(newData.Person.Email, new PersonStatistics());
+            report.PersonStatistics[newData.Person.Email].Results.Add(newData.Result);
+            CalculateAdditionalInfo(report.PersonStatistics[newData.Person.Email]);
+
+            if (!report.ResultDistribution.ContainsKey(newData.Result))
+                report.ResultDistribution.Add(newData.Result, 0);
+            report.ResultDistribution[newData.Result]++;
+
+            report.TotalAmountOfTests++;
+
+            foreach (var answer in newData.Answers)
+            {
+                if (!report.QuestionStatistics.ContainsKey(answer.Question.QuestionText))
+                    report.QuestionStatistics.Add(answer.Question.QuestionText, new QuestionStatistics());
+                var el = report.QuestionStatistics[answer.Question.QuestionText];
+
+                if (answer.AnswerIndex == answer.Question.CorrectAnswerIndex)
+                    el.RightAnswersAmount++;
+                else
+                    el.WrongAnswersAmount++;
+
+                el.RightAnswerIndex = answer.Question.CorrectAnswerIndex;
+
+                el.AnswersDistribution[answer.AnswerIndex]++;
+            }
+        }
+    }
+}

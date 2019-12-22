@@ -20,17 +20,17 @@ namespace WebApiAnalysis.Controllers
         }
 
         [HttpPost]
-        public object Post([FromBody] QuizResultApiIn quizResultApiIn)
+        public IActionResult Post([FromBody] QuizResultApiIn quizResultApiIn)
         {
             try
             {
                 List<string> errors = new List<string>();
 
-                if (quizResultApiIn.Name == null)
+                if (String.IsNullOrEmpty(quizResultApiIn.Name))
                 {
                     errors.Add("Parameter \"name\" is empty");
                 }
-                if (quizResultApiIn.Email == null)
+                if (String.IsNullOrEmpty(quizResultApiIn.Email))
                 {
                     errors.Add("Parameter \"email\" is empty");
                 }
@@ -40,24 +40,17 @@ namespace WebApiAnalysis.Controllers
                 }
                 if (errors.Count != 0)
                 {
-                    return new Status { Result = "Fail", Errors = errors };
+                    return BadRequest(new Status { Result = "Fail", Errors = errors });
                 }
 
                 dataStorage.SavePersonTestResult(Parser.ParseQuizResultApiIn(quizResultApiIn));
 
-                return new Status { Result = "Success" };
+                return Ok(new Status { Result = "Success" });
             }
             catch (Exception e)
             {
-                return new Status { Result = "Error", Errors = new List<string> { e.Message } };
+                return BadRequest(new Status { Result = "Error", Errors = new List<string> { e.Message } });
             }
         }       
-
-
-        [HttpGet]
-        [Route("test")]
-        public string t(){
-            return "asd";
-        }
     }
 }
